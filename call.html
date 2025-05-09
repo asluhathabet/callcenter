@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نموذج مركز الاتصال - أصلها ثابت</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            padding: 20px 0;
+            font-size: 2em;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .form-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-size: 1.1em;
+            margin-top: 10px;
+            display: block;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        textarea {
+            resize: vertical;
+            height: 100px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .save-btn {
+            background-color: #f39c12;
+            width: auto;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .save-btn:hover {
+            background-color: #e67e22;
+        }
+
+        .alert {
+            text-align: center;
+            margin-top: 20px;
+            color: green;
+            font-size: 1.2em;
+        }
+
+        .counter {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>نموذج مركز الاتصال - أصلها ثابت</h1>
+
+        <div class="counter" id="call-counter">
+            عدد المكالمات المدخلة: <span id="call-count">0</span>
+        </div>
+
+        <div class="form-container">
+            <form id="data-form">
+                <!-- حقل إدخال اسم الموظف في أول مرة فقط -->
+                <div id="employee-name-container">
+                    <label for="employee-name">اسم الموظف:</label>
+                    <input type="text" id="employee-name" required>
+                </div>
+
+                <label for="student-name">اسم الطالب:</label>
+                <input type="text" id="student-name" required>
+
+                <label for="student-phone">رقم هاتف الطالب:</label>
+                <input type="text" id="student-phone" required>
+
+                <label for="call-status">حالة المكالمة:</label>
+                <input type="text" id="call-status" required>
+
+                <label for="rating">التقييم:</label>
+                <input type="number" id="rating" required>
+
+                <label for="notes">الملاحظات:</label>
+                <textarea id="notes"></textarea>
+
+                <button type="submit">أضف البيانات</button>
+            </form>
+
+            <button id="save-all" class="save-btn">حفظ البيانات النهائية</button>
+        </div>
+
+        <div class="alert" id="alert"></div>
+    </div>
+
+    <script>
+        let allData = [];
+        let callCount = 0;
+        let employeeName = ""; // متغير لتخزين اسم الموظف
+
+        // حفظ اسم الموظف عند أول إدخال فقط
+        function setEmployeeName() {
+            const employeeNameInput = document.getElementById('employee-name');
+            if (!employeeName && employeeNameInput.value) {
+                employeeName = employeeNameInput.value;
+                // مسح حقل إدخال اسم الموظف بعد أول إدخال
+                document.getElementById('employee-name-container').innerHTML = `
+                    <label for="employee-name">اسم الموظف:</label>
+                    <input type="text" value="${employeeName}" disabled>
+                `;
+            }
+        }
+
+        document.getElementById('data-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            setEmployeeName(); // حفظ اسم الموظف في أول إدخال فقط
+
+            const formData = {
+                employeeName: employeeName,
+                studentName: document.getElementById('student-name').value,
+                studentPhone: document.getElementById('student-phone').value,
+                callStatus: document.getElementById('call-status').value,
+                rating: document.getElementById('rating').value,
+                notes: document.getElementById('notes').value
+            };
+
+            allData.push([
+                new Date().toLocaleString(),
+                formData.employeeName,
+                formData.studentName,
+                formData.studentPhone,
+                formData.callStatus,
+                formData.rating,
+                formData.notes
+            ]);
+
+            callCount++;
+            document.getElementById('call-count').innerText = callCount;
+
+            document.getElementById('data-form').reset();
+            document.getElementById('alert').innerHTML = 'تم إضافة البيانات بنجاح!';
+        });
+
+        document.getElementById('save-all').addEventListener('click', function() {
+            if (allData.length > 0) {
+                const worksheet = [
+                    ['التاريخ', 'اسم الموظف', 'اسم الطالب', 'رقم الطالب', 'حالة المكالمة', 'التقييم', 'الملاحظات'],
+                    ...allData
+                ];
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(worksheet);
+                XLSX.utils.book_append_sheet(wb, ws, "StudentData");
+
+                XLSX.writeFile(wb, 'data.xlsx');
+                document.getElementById('alert').innerHTML = 'تم حفظ البيانات بنجاح!';
+            } else {
+                document.getElementById('alert').innerHTML = 'لا توجد بيانات لحفظها!';
+            }
+        });
+    </script>
+</body>
+</html>
