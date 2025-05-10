@@ -63,7 +63,6 @@
             border-radius: 5px;
             font-size: 1.1em;
             cursor: pointer;
-            width: 100%;
             margin-top: 20px;
         }
 
@@ -73,9 +72,7 @@
 
         .save-btn {
             background-color: #f39c12;
-            width: auto;
-            margin-top: 20px;
-            cursor: pointer;
+            margin-right: 10px;
         }
 
         .save-btn:hover {
@@ -108,31 +105,37 @@
 
         <div class="form-container">
             <form id="data-form">
-                <!-- حقل إدخال اسم الموظف في أول مرة فقط -->
                 <div id="employee-name-container">
                     <label for="employee-name">اسم الموظف:</label>
                     <input type="text" id="employee-name" required>
                 </div>
 
-                <label for="student-name">اسم الطالب:</label>
-                <input type="text" id="student-name" required>
+                <label for="full-name">الاسم الكامل:</label>
+                <input type="text" id="full-name" required>
 
-                <label for="student-phone">رقم هاتف الطالب:</label>
-                <input type="text" id="student-phone" required>
+                <label for="phone">رقم الهاتف:</label>
+                <input type="text" id="phone" required>
 
-                <label for="call-status">حالة المكالمة:</label>
-                <input type="text" id="call-status" required>
+                <label for="department">القسم:</label>
+                <input type="text" id="department" required>
 
-                <label for="rating">التقييم:</label>
-                <input type="number" id="rating" required>
+                <label for="branch">الفرع:</label>
+                <input type="text" id="branch" required>
 
-                <label for="notes">الملاحظات:</label>
-                <textarea id="notes"></textarea>
+                <label for="topic">المحتوى:</label>
+                <textarea id="topic" required></textarea>
+
+                <label for="employee-response">رد الموظف:</label>
+                <textarea id="employee-response"></textarea>
+
+                <label for="employee-note">ملاحظة الموظف:</label>
+                <textarea id="employee-note"></textarea>
 
                 <button type="submit">أضف البيانات</button>
             </form>
 
             <button id="save-all" class="save-btn">حفظ البيانات النهائية</button>
+            <button id="print-data" class="save-btn" style="background-color:#3498db;">طباعة البيانات</button>
         </div>
 
         <div class="alert" id="alert"></div>
@@ -141,14 +144,37 @@
     <script>
         let allData = [];
         let callCount = 0;
-        let employeeName = ""; // متغير لتخزين اسم الموظف
+        let employeeName = "";
 
-        // حفظ اسم الموظف عند أول إدخال فقط
+        window.onload = function () {
+            const stored = localStorage.getItem('callCenterData');
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                allData = parsed.data || [];
+                employeeName = parsed.employeeName || "";
+                callCount = allData.length;
+                document.getElementById('call-count').innerText = callCount;
+
+                if (employeeName) {
+                    document.getElementById('employee-name-container').innerHTML = `
+                        <label for="employee-name">اسم الموظف:</label>
+                        <input type="text" value="${employeeName}" disabled>
+                    `;
+                }
+            }
+        };
+
+        function saveToLocalStorage() {
+            localStorage.setItem('callCenterData', JSON.stringify({
+                data: allData,
+                employeeName: employeeName
+            }));
+        }
+
         function setEmployeeName() {
             const employeeNameInput = document.getElementById('employee-name');
             if (!employeeName && employeeNameInput.value) {
                 employeeName = employeeNameInput.value;
-                // مسح حقل إدخال اسم الموظف بعد أول إدخال
                 document.getElementById('employee-name-container').innerHTML = `
                     <label for="employee-name">اسم الموظف:</label>
                     <input type="text" value="${employeeName}" disabled>
@@ -156,52 +182,76 @@
             }
         }
 
-        document.getElementById('data-form').addEventListener('submit', function(event) {
+        document.getElementById('data-form').addEventListener('submit', function (event) {
             event.preventDefault();
-
-            setEmployeeName(); // حفظ اسم الموظف في أول إدخال فقط
+            setEmployeeName();
 
             const formData = {
                 employeeName: employeeName,
-                studentName: document.getElementById('student-name').value,
-                studentPhone: document.getElementById('student-phone').value,
-                callStatus: document.getElementById('call-status').value,
-                rating: document.getElementById('rating').value,
-                notes: document.getElementById('notes').value
+                date: new Date().toLocaleString(),
+                fullName: document.getElementById('full-name').value,
+                phone: document.getElementById('phone').value,
+                department: document.getElementById('department').value,
+                branch: document.getElementById('branch').value,
+                topic: document.getElementById('topic').value,
+                employeeResponse: document.getElementById('employee-response').value,
+                employeeNote: document.getElementById('employee-note').value
             };
 
             allData.push([
-                new Date().toLocaleString(),
+                formData.date,
                 formData.employeeName,
-                formData.studentName,
-                formData.studentPhone,
-                formData.callStatus,
-                formData.rating,
-                formData.notes
+                formData.fullName,
+                formData.phone,
+                formData.department,
+                formData.branch,
+                formData.topic,
+                formData.employeeResponse,
+                formData.employeeNote
             ]);
 
             callCount++;
             document.getElementById('call-count').innerText = callCount;
-
+            saveToLocalStorage();
             document.getElementById('data-form').reset();
             document.getElementById('alert').innerHTML = 'تم إضافة البيانات بنجاح!';
+            setTimeout(() => document.getElementById('alert').innerHTML = '', 3000);
         });
 
-        document.getElementById('save-all').addEventListener('click', function() {
+        document.getElementById('save-all').addEventListener('click', function () {
             if (allData.length > 0) {
                 const worksheet = [
-                    ['التاريخ', 'اسم الموظف', 'اسم الطالب', 'رقم الطالب', 'حالة المكالمة', 'التقييم', 'الملاحظات'],
+                    ['التاريخ', 'اسم الموظف', 'الاسم', 'رقم الهاتف', 'القسم', 'الفرع', 'المحتوى', 'رد الموظف', 'ملاحظة الموظف'],
                     ...allData
                 ];
 
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(worksheet);
-                XLSX.utils.book_append_sheet(wb, ws, "StudentData");
-
-                XLSX.writeFile(wb, 'data.xlsx');
+                XLSX.utils.book_append_sheet(wb, ws, "CallCenterData");
+                const fileName = `مكالمات_${employeeName}_${new Date().toLocaleDateString('ar-EG')}.xlsx`;
+                XLSX.writeFile(wb, fileName);
                 document.getElementById('alert').innerHTML = 'تم حفظ البيانات بنجاح!';
             } else {
                 document.getElementById('alert').innerHTML = 'لا توجد بيانات لحفظها!';
+            }
+            setTimeout(() => document.getElementById('alert').innerHTML = '', 3000);
+        });
+
+        document.getElementById('print-data').addEventListener('click', function () {
+            if (allData.length > 0) {
+                let printContent = `<h2 style="text-align:right">تقرير المكالمات - الموظف: ${employeeName}</h2><table border="1" dir="rtl" style="width:100%; border-collapse: collapse;"><thead><tr>
+                    <th>التاريخ</th><th>اسم الموظف</th><th>الاسم</th><th>رقم الهاتف</th><th>القسم</th><th>الفرع</th><th>المحتوى</th><th>رد الموظف</th><th>ملاحظة الموظف</th>
+                </tr></thead><tbody>`;
+                allData.forEach(row => {
+                    printContent += "<tr>" + row.map(cell => `<td>${cell}</td>`).join('') + "</tr>";
+                });
+                printContent += "</tbody></table>";
+                const win = window.open('', '', 'width=900,height=700');
+                win.document.write(`<html><head><title>طباعة البيانات</title></head><body>${printContent}</body></html>`);
+                win.document.close();
+                win.print();
+            } else {
+                alert("لا توجد بيانات للطباعة.");
             }
         });
     </script>
